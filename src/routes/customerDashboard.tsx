@@ -48,7 +48,7 @@ function RouteComponent() {
         let username = currentUser.displayName || "Anonymous";
 
         if (provider === "google.com") {
-          // Google login
+          // Google Sign-In
           setUser({
             username,
             email,
@@ -56,7 +56,7 @@ function RouteComponent() {
           });
         } else {
           try {
-            // Manual login: Fetch Firestore username
+            // Manual login: Fetch user data from Firestore
             const usersRef = collection(db, "users");
             const userQuery = query(usersRef, where("email", "==", email));
             const userSnapshot = await getDocs(userQuery);
