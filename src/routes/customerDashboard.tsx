@@ -56,7 +56,7 @@ function RouteComponent() {
         } else {
           // Manual Login: Fetch from Firestore
           try {
-            const usersRef = collection(db, "users");
+            const usersRef = collection(db, "user");
             const userQuery = query(usersRef, where("email", "==", email));
             const userSnapshot = await getDocs(userQuery);
 
