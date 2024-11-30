@@ -44,26 +44,36 @@ function RouteComponent() {
     onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
         const email = currentUser.email || "";
+        const username = currentUser.displayName || "Anonymous";
 
-        try {
-          // Fetch user document ID based on email
-          const usersRef = collection(db, "users");
-          const userQuery = query(usersRef, where("email", "==", email));
-          const userSnapshot = await getDocs(userQuery);
+        if (currentUser.providerData[0]?.providerId === "google.com") {
+          // User logged in with Google
+          setUser({
+            username,
+            email,
+            userId: currentUser.uid, // Use the Firebase UID
+          });
+        } else {
+          try {
+            // User logged in with email/password, query Firestore for additional data
+            const usersRef = collection(db, "users");
+            const userQuery = query(usersRef, where("email", "==", email));
+            const userSnapshot = await getDocs(userQuery);
 
-          if (userSnapshot.empty) {
-            console.error("No matching user found in the users table.");
+            if (userSnapshot.empty) {
+              console.error("No matching user found in the users table.");
+              setUser(null);
+              return;
+            }
+
+            const userId = userSnapshot.docs[0].id; // Fetch document ID
+            const firestoreUsername = userSnapshot.docs[0].data()?.username || "Anonymous";
+
+            setUser({ username: firestoreUsername, email, userId });
+          } catch (error) {
+            console.error("Error fetching user document:", error);
             setUser(null);
-            return;
           }
-
-          const userId = userSnapshot.docs[0].id; // Fetch document ID
-          const username = userSnapshot.docs[0].data()?.username || "Anonymous";
-
-          setUser({ username, email, userId });
-        } catch (error) {
-          console.error("Error fetching user document:", error);
-          setUser(null);
         }
       } else {
         setUser(null);
@@ -76,15 +86,22 @@ function RouteComponent() {
       if (!user?.userId) return;
 
       try {
-        // Fetch counts from `delivery` table using the user's document ID
         const deliveryRef = collection(db, "delivery");
 
         // Pending query
-        const pendingQuery = query(deliveryRef, where("status", "==", "pending"), where("user", "==", user.userId));
+        const pendingQuery = query(
+          deliveryRef,
+          where("status", "==", "pending"),
+          where("user", "==", user.userId)
+        );
         const pendingSnapshot = await getDocs(pendingQuery);
 
         // Completed query
-        const completedQuery = query(deliveryRef, where("status", "==", "completed"), where("user", "==", user.userId));
+        const completedQuery = query(
+          deliveryRef,
+          where("status", "==", "completed"),
+          where("user", "==", user.userId)
+        );
         const completedSnapshot = await getDocs(completedQuery);
 
         setPendingCount(pendingSnapshot.size);
@@ -215,11 +232,11 @@ function RouteComponent() {
                     role="tabpanel"
                     aria-labelledby="bootstrap-tab"
                   >
-                    <h6>You have {pendingCount}  Pending Packages</h6>
+                    <h6>You have {pendingCount} Pending Packages</h6>
                   </div>
 
                   <div className="tab-pane fade" id="pwa" role="tabpanel" aria-labelledby="pwa-tab">
-                    <h6>You have {completedCount}  Completed Packages</h6>
+                    <h6>You have {completedCount} Completed Packages</h6>
                   </div>
                 </div>
               </div>
@@ -268,7 +285,7 @@ function RouteComponent() {
             </div>
           </div>
         </div>
-        <br/>
+        <br />
         <div className="container">
           <div className="card card-gradient-bg">
             <div className="card-body p-5 direction-rtl">
