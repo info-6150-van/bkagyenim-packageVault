@@ -94,7 +94,7 @@ function RouteComponent() {
           <div className="header-content position-relative d-flex align-items-center justify-content-between">
             {/* Back Button */}
             <div className="back-button">
-              <Link to="/">
+              <Link to="/staffDashboard">
                 <i className="bi bi-arrow-left-short"></i>
               </Link>
             </div>
