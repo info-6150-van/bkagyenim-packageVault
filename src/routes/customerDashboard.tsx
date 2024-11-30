@@ -44,14 +44,13 @@ function RouteComponent() {
     const auth = getAuth();
     onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
-        const email = currentUser.email || "";
         const provider = currentUser.providerData[0]?.providerId;
-
+  
         if (provider === "google.com") {
           // Google Sign-In
           setUser({
             username: currentUser.displayName || "Anonymous",
-            email,
+            email: currentUser.email || "No Email Found",
             userId: currentUser.uid,
           });
           setLoading(false);
@@ -59,18 +58,18 @@ function RouteComponent() {
           // Manual Login
           try {
             const usersRef = collection(db, "users");
-            const username = currentUser.displayName || ""; // Assuming displayName contains username for manual login
+            const username = currentUser.displayName || ""; // Assuming manual login sets displayName to the username
             const userQuery = query(usersRef, where("username", "==", username));
             const userSnapshot = await getDocs(userQuery);
-
+  
             if (userSnapshot.empty) {
               console.error("No matching user found in the users table.");
               setUser(null);
             } else {
               const userData = userSnapshot.docs[0].data();
               setUser({
-                username: userData?.username || "Anonymous",
-                email: userData?.email || "No Email Found",
+                username: userData.username || "Anonymous",
+                email: userData.email || "No Email Found",
                 userId: userSnapshot.docs[0].id,
               });
             }
@@ -87,6 +86,7 @@ function RouteComponent() {
       }
     });
   }, []);
+  
 
   useEffect(() => {
     const fetchPackageCounts = async () => {
