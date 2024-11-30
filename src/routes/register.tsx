@@ -3,8 +3,6 @@ import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import authImage from '../assets/img/bg-img/auth.png';
 import { auth, googleProvider } from '../firebaseConfig';
 import { signInWithPopup } from 'firebase/auth';
-import { db } from '../firebaseConfig';
-import { collection, addDoc, query, where, getDocs } from 'firebase/firestore';
 import Swal from 'sweetalert';
 
 export const Route = createFileRoute('/register')({
@@ -33,52 +31,26 @@ function RegisterComponent() {
     }
 
     try {
-      const usersRef = collection(db, 'users');
-      
-      // Check if email, username, or phone number already exists
-      const emailQuery = query(usersRef, where('email', '==', email));
-      const usernameQuery = query(usersRef, where('username', '==', username));
-      const phoneQuery = query(usersRef, where('phone', '==', phone));
-      
-      const emailSnapshot = await getDocs(emailQuery);
-      const usernameSnapshot = await getDocs(usernameQuery);
-      const phoneSnapshot = await getDocs(phoneQuery);
-
-      if (!emailSnapshot.empty) {
-        Swal('Error', 'Email already exists. Please use a different email.', 'error');
-        return;
-      }
-      if (!usernameSnapshot.empty) {
-        Swal('Error', 'Username already exists. Please choose a different username.', 'error');
-        return;
-      }
-      if (!phoneSnapshot.empty) {
-        Swal('Error', 'Phone number already exists. Please use a different phone number.', 'error');
-        return;
-      }
-
-      // Add new user document to Firestore
-      await addDoc(usersRef, {
-        email,
-        username,
-        phone,
-        password,
-      });
-
       Swal('Success', 'User registered successfully!', 'success').then(() => {
         navigate({ to: '/login' });
       });
     } catch (error) {
       Swal('Error', 'An error occurred during registration', 'error');
-      console.error('Error adding document:', error);
+      console.error('Error during registration:', error);
     }
   };
 
   const handleGoogleSignIn = async () => {
     try {
       const result = await signInWithPopup(auth, googleProvider);
-      console.log('Google Sign-In successful:', result.user);
-      navigate({ to: '/customerDashboard' });
+      const user = result.user;
+
+      // User is authenticated with Google
+      console.log('Google Sign-In successful:', user);
+
+      Swal('Success', `Welcome, ${user.displayName || 'User'}!`, 'success').then(() => {
+        navigate({ to: '/customerDashboard' });
+      });
     } catch (error) {
       Swal('Error', 'Error during Google Sign-In', 'error');
       console.error('Error during Google Sign-In:', error);
