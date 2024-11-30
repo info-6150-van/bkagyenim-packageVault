@@ -45,18 +45,17 @@ function RouteComponent() {
       if (currentUser) {
         const email = currentUser.email || "";
         const provider = currentUser.providerData[0]?.providerId;
-        let username = currentUser.displayName || "Anonymous";
 
         if (provider === "google.com") {
-          // Google Sign-In
+          // Google Sign-In: Use Google displayName and email
           setUser({
-            username,
+            username: currentUser.displayName || "Anonymous",
             email,
             userId: currentUser.uid,
           });
         } else {
+          // Manual Login: Fetch from Firestore
           try {
-            // Manual login: Fetch user data from Firestore
             const usersRef = collection(db, "users");
             const userQuery = query(usersRef, where("email", "==", email));
             const userSnapshot = await getDocs(userQuery);
@@ -68,11 +67,9 @@ function RouteComponent() {
             }
 
             const userData = userSnapshot.docs[0].data();
-            username = userData?.username || "Anonymous";
-
             setUser({
-              username,
-              email,
+              username: userData?.username || "Anonymous",
+              email: userData?.email || email,
               userId: userSnapshot.docs[0].id,
             });
           } catch (error) {
