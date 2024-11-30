@@ -36,6 +36,7 @@ export const Route = createFileRoute("/customerDashboard")({
 
 function RouteComponent() {
   const [user, setUser] = useState<User>(null);
+  const [loading, setLoading] = useState<boolean>(true); // Track loading state
   const [pendingCount, setPendingCount] = useState<number>(0);
   const [completedCount, setCompletedCount] = useState<number>(0);
 
@@ -47,38 +48,41 @@ function RouteComponent() {
         const provider = currentUser.providerData[0]?.providerId;
 
         if (provider === "google.com") {
-          // Google Sign-In: Use Google displayName and email
+          // Google Sign-In
           setUser({
             username: currentUser.displayName || "Anonymous",
             email,
             userId: currentUser.uid,
           });
+          setLoading(false); // Stop loading
         } else {
-          // Manual Login: Fetch from Firestore
+          // Manual Login
           try {
-            const usersRef = collection(db, "user");
+            const usersRef = collection(db, "users");
             const userQuery = query(usersRef, where("email", "==", email));
             const userSnapshot = await getDocs(userQuery);
 
             if (userSnapshot.empty) {
               console.error("No matching user found in the users table.");
               setUser(null);
-              return;
+            } else {
+              const userData = userSnapshot.docs[0].data();
+              setUser({
+                username: userData?.username || "Anonymous",
+                email: userData?.email || email,
+                userId: userSnapshot.docs[0].id,
+              });
             }
-
-            const userData = userSnapshot.docs[0].data();
-            setUser({
-              username: userData?.username || "Anonymous",
-              email: userData?.email || email,
-              userId: userSnapshot.docs[0].id,
-            });
           } catch (error) {
             console.error("Error fetching user document:", error);
             setUser(null);
+          } finally {
+            setLoading(false); // Stop loading even if there's an error
           }
         }
       } else {
         setUser(null);
+        setLoading(false); // Stop loading if no user is logged in
       }
     });
   }, []);
@@ -116,10 +120,18 @@ function RouteComponent() {
     fetchPackageCounts();
   }, [user]);
 
-  if (!user) {
+  if (loading) {
     return (
       <div className="loading-screen">
         <p>Loading...</p>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="loading-screen">
+        <p>User not found or not logged in.</p>
       </div>
     );
   }
