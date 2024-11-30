@@ -103,7 +103,7 @@ function RouteComponent() {
               <div className="container">
                 <div className="header-content position-relative d-flex align-items-center justify-content-center">
                   <Link
-                    to="/"
+                    to="/staffDashboard"
                     className="position-absolute start-0 ms-3"
                     style={{ fontSize: "24px", textDecoration: "none" }}
                   >
