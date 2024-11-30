@@ -36,7 +36,7 @@ export const Route = createFileRoute("/customerDashboard")({
 
 function RouteComponent() {
   const [user, setUser] = useState<User>(null);
-  const [loading, setLoading] = useState<boolean>(true); // Track loading state
+  const [loading, setLoading] = useState<boolean>(true);
   const [pendingCount, setPendingCount] = useState<number>(0);
   const [completedCount, setCompletedCount] = useState<number>(0);
 
@@ -54,12 +54,13 @@ function RouteComponent() {
             email,
             userId: currentUser.uid,
           });
-          setLoading(false); // Stop loading
+          setLoading(false);
         } else {
           // Manual Login
           try {
             const usersRef = collection(db, "users");
-            const userQuery = query(usersRef, where("email", "==", email));
+            const username = currentUser.displayName || ""; // Assuming displayName contains username for manual login
+            const userQuery = query(usersRef, where("username", "==", username));
             const userSnapshot = await getDocs(userQuery);
 
             if (userSnapshot.empty) {
@@ -69,7 +70,7 @@ function RouteComponent() {
               const userData = userSnapshot.docs[0].data();
               setUser({
                 username: userData?.username || "Anonymous",
-                email: userData?.email || email,
+                email: userData?.email || "No Email Found",
                 userId: userSnapshot.docs[0].id,
               });
             }
@@ -77,12 +78,12 @@ function RouteComponent() {
             console.error("Error fetching user document:", error);
             setUser(null);
           } finally {
-            setLoading(false); // Stop loading even if there's an error
+            setLoading(false);
           }
         }
       } else {
         setUser(null);
-        setLoading(false); // Stop loading if no user is logged in
+        setLoading(false);
       }
     });
   }, []);
