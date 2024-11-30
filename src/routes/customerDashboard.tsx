@@ -44,18 +44,19 @@ function RouteComponent() {
     onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
         const email = currentUser.email || "";
-        const username = currentUser.displayName || "Anonymous";
+        const provider = currentUser.providerData[0]?.providerId;
+        let username = currentUser.displayName || "Anonymous";
 
-        if (currentUser.providerData[0]?.providerId === "google.com") {
-          // User logged in with Google
+        if (provider === "google.com") {
+          // Google login
           setUser({
             username,
             email,
-            userId: currentUser.uid, // Use the Firebase UID
+            userId: currentUser.uid,
           });
         } else {
           try {
-            // User logged in with email/password, query Firestore for additional data
+            // Manual login: Fetch Firestore username
             const usersRef = collection(db, "users");
             const userQuery = query(usersRef, where("email", "==", email));
             const userSnapshot = await getDocs(userQuery);
@@ -66,10 +67,14 @@ function RouteComponent() {
               return;
             }
 
-            const userId = userSnapshot.docs[0].id; // Fetch document ID
-            const firestoreUsername = userSnapshot.docs[0].data()?.username || "Anonymous";
+            const userData = userSnapshot.docs[0].data();
+            username = userData?.username || "Anonymous";
 
-            setUser({ username: firestoreUsername, email, userId });
+            setUser({
+              username,
+              email,
+              userId: userSnapshot.docs[0].id,
+            });
           } catch (error) {
             console.error("Error fetching user document:", error);
             setUser(null);
