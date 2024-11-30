@@ -26,7 +26,7 @@ type UserOption = {
 
 type CompartmentOption = {
   id: string;
-  compartment: string;
+  compartment: string | number; // Updated to handle both string and number
 };
 
 function RouteComponent() {
@@ -101,7 +101,7 @@ function RouteComponent() {
     console.log("Selected Size:", selectedSize);
     console.log("Selected Compartment:", selectedCompartment);
     console.log("Selected Courier:", selectedCourier);
-  
+
     if (
       !selectedUser ||
       !selectedSize ||
@@ -115,7 +115,7 @@ function RouteComponent() {
       });
       return;
     }
-  
+
     if (availableCompartments.length === 0) {
       Swal.fire({
         icon: "error",
@@ -124,25 +124,28 @@ function RouteComponent() {
       });
       return;
     }
-  
+
     try {
       const deliveryCollection = collection(db, "delivery");
       const vaultCollection = collection(db, "vault");
-  
+
       // Query the vault collection for the selected compartment
       const vaultQuery = query(
         vaultCollection,
-        where("compartment", "==", Number(selectedCompartment)) // Convert to number
+        where("compartment", "==", isNaN(Number(selectedCompartment))
+          ? selectedCompartment // Treat as string if not a valid number
+          : Number(selectedCompartment) // Treat as number if valid
+        )
       );
       const vaultSnapshot = await getDocs(vaultQuery);
-  
+
       if (!vaultSnapshot.empty) {
         const vaultDocId = vaultSnapshot.docs[0].id;
         const vaultDocRef = doc(db, "vault", vaultDocId);
-  
+
         // Update the status of the compartment to "blocked"
         await updateDoc(vaultDocRef, { status: "blocked" });
-  
+
         console.log(
           `Compartment ${selectedCompartment} status updated to blocked in the vault table.`
         );
@@ -157,7 +160,7 @@ function RouteComponent() {
         });
         return;
       }
-  
+
       // Save the data to the delivery table
       const deliveryData = {
         user: selectedUser.value,
@@ -167,11 +170,11 @@ function RouteComponent() {
         status: "pending", // Default status
         timestamp: Timestamp.now(), // Use imported Timestamp
       };
-  
+
       console.log("Attempting to save delivery:", deliveryData);
-  
+
       await addDoc(deliveryCollection, deliveryData);
-  
+
       Swal.fire({
         icon: "success",
         title: "Success",
@@ -180,7 +183,7 @@ function RouteComponent() {
         // Refresh the page on success
         window.location.reload();
       });
-  
+
       // Reset form (not necessary with page refresh but added for completeness)
       setSelectedUser(null);
       setSelectedSize(null);
@@ -195,7 +198,6 @@ function RouteComponent() {
       });
     }
   };
-  
 
   return (
     <>
@@ -213,7 +215,11 @@ function RouteComponent() {
             <div className="header-area" id="headerArea">
               <div className="container">
                 <div className="header-content position-relative d-flex align-items-center justify-content-center">
-                  <Link to="/" className="position-absolute start-0 ms-3" style={{ fontSize: '24px', textDecoration: 'none' }}>
+                  <Link
+                    to="/"
+                    className="position-absolute start-0 ms-3"
+                    style={{ fontSize: "24px", textDecoration: "none" }}
+                  >
                     &#8592;
                   </Link>
                   <div className="page-heading text-center">
@@ -225,7 +231,6 @@ function RouteComponent() {
           </div>
         </div>
       </div>
-
 
       <div className="page-content-wrapper py-3">
         <div className="container">
